@@ -22,11 +22,10 @@
         // fieldList shows which field you want to load, and which axis to display that field on,
         // the 'T' Temperature left axis, or the 'O' Other right axis.
         var channelKeys = [];
-        //Change TO: display two fields from the same channel from a Rain gauge - 15min counts, and total counts
-        //  src="http://api.thingspeak.com/channels/8652/charts/3?width=1300&height=520&results=1000&dynamic=false&title=15minTotals%20(0.5mm)" ></iframe>
+        
         channelKeys.push({
             channelNumber: 150393,
-            name: 'SA Electricity Supply and Demand',
+            name: 'SA Interconnector',
             key: 'JDCPNL0AT0LSPL3A',
             fieldList: [{
                 field: 1,
@@ -145,7 +144,7 @@
                 var chartOptions = {
                     chart: {
                         renderTo: 'chart-container',
-                        zoomType: 'y',
+                        zoomType: 'x',
                         events: {
                             load: function() {
                                 if ('true' === 'true' && (''.length < 1 && ''.length < 1 && ''.length < 1 && ''.length < 1 && ''.length < 1)) {
@@ -381,7 +380,7 @@
             window.console && console.log('sentChannelIndex:', sentChannelIndex);
             window.console && console.log('numLoads:', numLoads);
             // get the Channel data with a webservice call
-            $.getJSON('https://www.thingspeak.com/channels/' + channelNumber + '/feed.json?callback=?&amp;offset=0&amp;start=2013-01-20T00:00:00;end=' + end + ';key=' + key, function(data) {
+            $.getJSON('https://www.thingspeak.com/channels/' + channelNumber + '/feed.json?callback=?&amp;offset=0&amp;start=2016-09-01T00:00:00;end=' + end + ';key=' + key, function(data) {
                 // if no access
                 if (data == '-1') {
                     $('#chart-container').append('This channel is not public.  To embed charts, the channel must be public or a read key must be specified.');
