@@ -7,8 +7,8 @@
     <!--<script src="https://www.thingspeak.com/assets/application-927d1479ab2235e91ae25cb56d33b211.js"
      type="text/javascript"></script>-->
     <script src="http://code.highcharts.com/stock/highstock.js"></script>
-    <script src="http://code.highcharts.com/stock/modules/exporting.js"></script>
-    <script src="https://rawgithub.com/highslide-software/export-csv/master/export-csv.js"></script>
+    <!--<script src="http://code.highcharts.com/stock/modules/exporting.js"></script> -->
+    <!--<script src="https://rawgithub.com/highslide-software/export-csv/master/export-csv.js"></script> -->
     <script type="text/javascript">
         // Webpage Javascript to chart multiple ThingSpeak channels on two axis with navigator, load historical data, and export cvs data.
         // Public Domain, by turgo.
@@ -35,11 +35,6 @@
                 axis: 'T'
             }]
         });
-        //channelKeys.push({channelNumber:5683, name:'Sam Rogers Solar System',key:'XXXXXXXXXXXXXXXX',
-        //   fieldList:[{field:1,axis:'T'},{field:2,axis:'T'},{field:3,axis:'T'},{field:4,axis:'T'},{field:5,axis:'T'},{field:6,axis:'T'}]});
-        //channelKeys.push({channelNumber:9354, name:'CRYSTAL CITY WEATHER Fault',key:'XXXXXXXXXXXXXXXX',
-        //   fieldList:[{field:1,axis:'T'},{field:2,axis:'O'},{field:3,axis:'O'},{field:4,axis:'O'},{field:5,axis:'O'},{field:6,axis:'O'}]});
-
         // user's timezone offset
         var myOffset = new Date().getTimezoneOffset();
 
@@ -101,7 +96,7 @@
                 var fieldList = sentFieldList;
                 var channelIndex = sentChannelIndex;
                 // get the Channel data with a webservice call
-                $.getJSON('https://www.thingspeak.com/channels/' + channelNumber + '/feed.json?callback=?&amp;offset=0&amp;results=250;key=' + key, function(data) {
+                $.getJSON('https://www.thingspeak.com/channels/' + channelNumber + '/feed.json?callback=?&amp;offset=0&amp;results=2500;key=' + key, function(data) {
                         // if no access
                         if (data == '-1') {
                             $('#chart-container').append('This channel is not public.  To embed charts, the channel must be public or a read key must be specified.');
@@ -285,12 +280,6 @@
                         opposite: true,
                         id: 'O'
                     }],
-                    exporting: {
-                        enabled: true,
-                        csv: {
-                            dateFormat: '%d/%m/%Y %I:%M:%S %p'
-                        }
-                    },
                     legend: {
                         enabled: true
                     },
@@ -309,14 +298,29 @@
                 {
                     for (var fieldIndex = 0; fieldIndex < channelKeys[channelIndex].fieldList.length; fieldIndex++) // add each field
                     {
-                        window.console && console.log('Channel ' + channelIndex + ' field ' + fieldIndex);
+                        window.console && console.log('Adding series to Channel ' + channelIndex + ' field ' + fieldIndex);
+                        if (fieldIndex == 1) {
                         chartOptions.series.push({
                             data: channelKeys[channelIndex].fieldList[fieldIndex].data,
+                            zones: [{ value: 0, color: 'Red'}, { color: 'Green'} ],
+                            type: 'area',
+                            zIndex: 2,
                             index: channelKeys[channelIndex].fieldList[fieldIndex].series,
                             yAxis: channelKeys[channelIndex].fieldList[fieldIndex].axis,
                             //visible:false,
                             name: channelKeys[channelIndex].fieldList[fieldIndex].name
                         });
+                       } else {
+                        chartOptions.series.push({
+                            data: channelKeys[channelIndex].fieldList[fieldIndex].data,
+                            index: channelKeys[channelIndex].fieldList[fieldIndex].series,
+                            yAxis: channelKeys[channelIndex].fieldList[fieldIndex].axis,
+                            zIndex: 1,
+                            //visible:false,
+                            name: channelKeys[channelIndex].fieldList[fieldIndex].name
+                        });
+
+                       }
                     }
                 }
                 // set chart labels here so that decoding occurs properly
@@ -455,3 +459,4 @@
 </body>
 
 </html>
+
