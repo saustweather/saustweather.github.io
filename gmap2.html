@@ -33,6 +33,7 @@
         $.ajax({
           url: "https://www.dropbox.com/s/fzqhnr39fq45ijh/gen_info.json?dl=0",
           jsonp: "callback",
+          dataType: 'jsonp',
           success: function( response ) {
             console.log('response from dropbox:')
             console.log( response ); // server response
