@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html>
   <head>
     <meta name="viewport" content="initial-scale=1.0">
     <meta charset="utf-8">
-    <title>KML Layers</title>
+    <title>SA Generators</title>
     <style>
       html, body {
         height: 100%;
@@ -29,7 +30,19 @@
                 csv=$.csv.toArrays(result);
                }
         });
-        //console.log(csv[0][14]);
+        $.ajax({
+          url: "https://www.dropbox.com/s/fzqhnr39fq45ijh/gen_info.json?raw=1",
+          jsonp: "callback",
+          success: function( response ) {
+            console.log('response from dropbox:')
+            console.log( response ); // server response
+          },
+          error: function(XMLHttpRequest, textStatus, errorThrown) {
+            console.log("Status: " + textStatus);
+            console.log(XMLHttpRequest);
+          }
+       });
+      //console.log(csv[0][14]);
         var map = new google.maps.Map(document.getElementById('map'), {
           zoom: 6,
           center: {lat: -34.5, lng: 138.6}
@@ -44,7 +57,7 @@
         var marker,i;
         for (i=1; i<csv.length; i++) {
           if (csv[i][2]=='SA1') {
-            console.log(csv[i][14]+' '+ csv[i][18]+' '+csv[i][19])
+            //console.log(csv[i][14]+' '+ csv[i][18]+' '+csv[i][19])
             marker = new google.maps.Marker({
          position: new google.maps.LatLng(csv[i][18], csv[i][19]),
          map: map
