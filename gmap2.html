@@ -25,7 +25,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
   <script>
     //https://stackoverflow.com/questions/7095574/google-maps-api-3-custom-marker-color-for-default-dot-marker/18623391#18623391
-    var redgrad = ["#FFCFCF", "#FFB8B8", "#FFA1A1", "#FF8A8A", "#FF7373", "#FF5C5C", "#FF4545", "#FF2E2E", "#FF1717", "#FF0000"];
+    //http://www.perbang.dk/rgbgradient/
+	var redgrad = ["#FFCFCF", "#FFB8B8", "#FFA1A1", "#FF8A8A", "#FF7373", "#FF5C5C", "#FF4545", "#FF2E2E", "#FF1717", "#FF0000"];
     var greengrad = ["#CFFFCF", "#B8FFB8", "#A1FFA1", "#8AFF8A", "#73FF73", "#5CFF5C", "#45FF45", "#2EFF2E", "#17FF17", "#00FF00"];
     var browngrad = ["#FEE3C8", "#F2D2B1", "#E6C19B", "#DBB085", "#CF9F6F", "#C48E58", "#B87D42", "#AD6C2C", "#A15B16", "#964A00"];
     var map;
@@ -59,9 +60,30 @@
       })(marker, info));
       markers.push(marker);
     }
+    // Sets the map on all markers in the array.
+    function setMapOnAll(map) {
+      for (var i = 0; i < markers.length; i++) {
+        markers[i].setMap(map);
+      }
+    }
 
-    function initMap() {
-      $.ajax({
+    // Removes the markers from the map, but keeps them in the array.
+    function clearMarkers() {
+      setMapOnAll(null);
+    }
+
+    // Shows any markers currently in the array.
+    function showMarkers() {
+      setMapOnAll(map);
+    }
+
+    // Deletes all markers in the array by removing references to them.
+    function deleteMarkers() {
+      clearMarkers();
+      markers = [];
+    }
+    function get_generators() {
+       $.ajax({
         url: "https://www.dropbox.com/s/fzqhnr39fq45ijh/gen_info.json?raw=1",
         jsonpCallback: "callback",
         jsonp: "callback",
@@ -69,10 +91,11 @@
 
         // Work with the response
         success: function(response) {
+		  deleteMarkers();
           //gen_info=response
           for (var gen in response) {
             console.log(gen + ':' + response[gen])
-              //http://www.perbang.dk/rgbgradient/
+              
 
             val = Math.round(response[gen][6] * 10 / response[gen][7]);
             if (val > 9) {
@@ -89,7 +112,7 @@
             } else {
               color = redgrad[val]
             }
-            var info = `<h4>${response[gen][1]}</h4>${Math.round(response[gen][6])} MW (${Math.abs(Math.round(response[gen][6]*100/response[gen][7]))}% of max capacity)`
+            var info = `<h4>${response[gen][1]}</h4> ${response[gen][0]}<br\>${Math.round(response[gen][6])} MW (${Math.abs(Math.round(response[gen][6]*100/response[gen][7]))}% of max capacity)`
             addMarker(response[gen][4], response[gen][5], color, info)
 
           }
@@ -100,13 +123,18 @@
           console.log(XMLHttpRequest);
         }
       });
+	}  
+    function initMap() {
+      
       map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 6,
+        zoom: 7,
         center: {
           lat: -34.5,
           lng: 138.6
         }
       });
+	  get_generators();
+	  setInterval(function() { get_generators() },5*60*1000);
 
     }
   </script>
