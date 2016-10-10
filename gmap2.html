@@ -1,102 +1,117 @@
-
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="initial-scale=1.0">
-    <meta charset="utf-8">
-    <title>SA Generators</title>
-    <style>
-      html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-      }
-      #map {
-        height: 100%;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="map"></div>
+
+<head>
+  <meta name="viewport" content="initial-scale=1.0">
+  <meta charset="utf-8">
+  <title>SA Generators</title>
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    
+    #map {
+      height: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
-    <script>
+  <script>
+    //https://stackoverflow.com/questions/7095574/google-maps-api-3-custom-marker-color-for-default-dot-marker/18623391#18623391
+    var redgrad = ["#FFCFCF", "#FFB8B8", "#FFA1A1", "#FF8A8A", "#FF7373", "#FF5C5C", "#FF4545", "#FF2E2E", "#FF1717", "#FF0000"];
+    var greengrad = ["#CFFFCF", "#B8FFB8", "#A1FFA1", "#8AFF8A", "#73FF73", "#5CFF5C", "#45FF45", "#2EFF2E", "#17FF17", "#00FF00"];
+    var browngrad = ["#FEE3C8", "#F2D2B1", "#E6C19B", "#DBB085", "#CF9F6F", "#C48E58", "#B87D42", "#AD6C2C", "#A15B16", "#964A00"];
+    var map;
+    var markers = [];
 
-      function initMap() {
-        $.ajax({
-        url : "NEM_DUIDs_with_geo.csv",
-        async:false,            //this is the trick
-        success : function(result){
-                csv=$.csv.toArrays(result);
-               }
-        });
-        $.ajax({
-          url: "https://www.dropbox.com/s/fzqhnr39fq45ijh/gen_info.json?raw=1",
-          jsonp: "callback",
-          dataType: 'jsonp',
-          success: function( response ) {
-            console.log('response from dropbox:')
-            console.log( response ); // server response
-          },
-          error: function(XMLHttpRequest, textStatus, errorThrown) {
-            console.log("Status: " + textStatus);
-            console.log(XMLHttpRequest);
+    function pinSymbol(color) {
+      return {
+        path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z M -2,-30 a 2,2 0 1,1 4,0 2,2 0 1,1 -4,0',
+        fillColor: color,
+        fillOpacity: 1,
+        strokeColor: '#000',
+        strokeWeight: 2,
+        scale: 1,
+      };
+    }
+
+    function addMarker(lat, lon, color, info) {
+      var marker = new google.maps.Marker({
+        position: new google.maps.LatLng(lat, lon),
+        icon: pinSymbol(color),
+        map: map
+
+      });
+      google.maps.event.addListener(marker, 'click', (function(marker, info_text) {
+        return function() {
+
+          infowindow = new google.maps.InfoWindow;
+          infowindow.setContent(info_text);
+          infowindow.open(map, marker);
+        }
+      })(marker, info));
+      markers.push(marker);
+    }
+
+    function initMap() {
+      $.ajax({
+        url: "https://www.dropbox.com/s/fzqhnr39fq45ijh/gen_info.json?raw=1",
+        jsonpCallback: "callback",
+        jsonp: "callback",
+        dataType: "jsonp",
+
+        // Work with the response
+        success: function(response) {
+          //gen_info=response
+          for (var gen in response) {
+            console.log(gen + ':' + response[gen])
+              //http://www.perbang.dk/rgbgradient/
+
+            val = Math.round(response[gen][6] * 10 / response[gen][7]);
+            if (val > 9) {
+              val = 9;
+            }
+            if (response[gen][3] == 'Wind') {
+              color = greengrad[val]
+            } else if (response[gen][3] == 'Inter') {
+              if (val <= 0) {
+                color = browngrad[-val]
+              } else {
+                color = greengrad[val]
+              }
+            } else {
+              color = redgrad[val]
+            }
+            var info = `<h4>${response[gen][1]}</h4>${Math.round(response[gen][6])} MW (${Math.abs(Math.round(response[gen][6]*100/response[gen][7]))}% of max capacity)`
+            addMarker(response[gen][4], response[gen][5], color, info)
+
           }
-       });
-      //console.log(csv[0][14]);
-        var map = new google.maps.Map(document.getElementById('map'), {
-          zoom: 6,
-          center: {lat: -34.5, lng: 138.6}
-        });
+        },
 
-        //var ctaLayer = new google.maps.KmlLayer({
-        //  url: 'http://23.239.134.229:7078/placemark.kml?dummy='+(new Date()).getTime(),
-        //  map: map
-        //});
-     //icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
-        var infowindow =  new google.maps.InfoWindow;
-        var marker,i;
-        for (i=1; i<csv.length; i++) {
-          if (csv[i][2]=='SA1') {
-            //console.log(csv[i][14]+' '+ csv[i][18]+' '+csv[i][19])
-            marker = new google.maps.Marker({
-         position: new google.maps.LatLng(csv[i][18], csv[i][19]),
-         map: map
-    });
-         google.maps.event.addListener(marker, 'click', (function(marker, i) {
-         return function() {
-             infowindow.setContent(csv[i][14]);
-             infowindow.open(map, marker);
-         }
-    })(marker, i));
-          }
-        };
+        error: function(XMLHttpRequest, textStatus, errorThrown) {
+          console.log("Status: " + textStatus);
+          console.log(XMLHttpRequest);
+        }
+      });
+      map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 6,
+        center: {
+          lat: -34.5,
+          lng: 138.6
+        }
+      });
 
-        var marker= new google.maps.Marker({
-           sName: "this is a name",
-icon: {
-        path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-        scale: 8.5,
-        fillColor: "#9C0000",
-        fillOpacity: 0.4,
-        strokeWeight: 0.4
-    },
-           position: new google.maps.LatLng(-34.8,138.5),
-           map: map
+    }
+  </script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB9IEBA9Uqm1leEeKoJf8LwetdAhEA5Qks&callback=initMap">
+  </script>
+</body>
 
-        });
-        google.maps.event.addListener(marker, 'mouseover', function() {
-          infowindow.open(map, this);
-        });
-        google.maps.event.addListener(marker, 'mouseout', function() {
-          infowindow.close(map, this);
-        });
-
-        //google.maps.MarkerImage("http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=%E2%80%A2|"
-      }
-    </script>
-    <script async defer
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB9IEBA9Uqm1leEeKoJf8LwetdAhEA5Qks&callback=initMap">
-    </script>
-  </body>
 </html>
