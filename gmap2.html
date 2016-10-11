@@ -16,11 +16,21 @@
     #map {
       height: 100%;
     }
+	#legend {
+        font-family: Arial, sans-serif;
+        background: #fff;
+        padding: 10px;
+        margin: 10px;
+        border: 1px solid #000;
+      }
+
   </style>
 </head>
 
 <body>
   <div id="map"></div>
+  <div id="legend"><table id="pricetable"><caption><a href="https://www.aemo.com.au/"  target="_blank">AEMO Price</a></caption></table></div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
   <script>
@@ -94,7 +104,7 @@
 		  deleteMarkers();
           //gen_info=response
           for (var gen in response) {
-            console.log(gen + ':' + response[gen])
+            //console.log(gen + ':' + response[gen])
               
 
             val = Math.round(response[gen][6] * 10 / response[gen][7]);
@@ -123,6 +133,31 @@
           console.log(XMLHttpRequest);
         }
       });
+	  $.getJSON( "https://api.thingspeak.com/channels/154899/feeds/last.json", function( data ) {
+        //console.log('Get Prices')
+		//fields 1=QLD1,2=VIC1,3=SA1,4=TAS1,5=NSW1
+		//console.log(data.created_at+' '+data.field3)
+		
+		var table=$('#pricetable')
+		table.children('tr').remove();
+		//table.createCaption().innerHTML='<a href="https://www.aemo.com.au/"  target="_blank">AEMO Price</a>'
+		lastRow=$('<tr/>').appendTo(table)
+		lastRow.append($('<td/>').text('SA'))
+		lastRow.append($('<td/>').text(`$${parseFloat(data.field3).toFixed(2)}/MWh`))
+		lastRow=$('<tr/>').appendTo(table)
+		lastRow.append($('<td/>').text('VIC'))
+		lastRow.append($('<td/>').text(`$${parseFloat(data.field2).toFixed(2)}/MWh`))
+		lastRow=$('<tr/>').appendTo(table)
+		lastRow.append($('<td/>').text('TAS'))
+		lastRow.append($('<td/>').text(`$${parseFloat(data.field4).toFixed(2)}/MWh`))
+		lastRow=$('<tr/>').appendTo(table)
+		lastRow.append($('<td/>').text('NSW'))
+		lastRow.append($('<td/>').text(`$${parseFloat(data.field5).toFixed(2)}/MWh`))
+		lastRow=$('<tr/>').appendTo(table)
+		lastRow.append($('<td/>').text('QLD'))
+		lastRow.append($('<td/>').text(`$${parseFloat(data.field1).toFixed(2)}/MWh`))
+		
+      });
 	}  
     function initMap() {
       
@@ -133,9 +168,10 @@
           lng: 138.6
         }
       });
+	  
 	  get_generators();
 	  setInterval(function() { get_generators() },5*60*1000);
-
+      map.controls[google.maps.ControlPosition.LEFT_TOP].push(legend);
     }
   </script>
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB9IEBA9Uqm1leEeKoJf8LwetdAhEA5Qks&callback=initMap">
