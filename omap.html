@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="https://cdn.rawgit.com/openlayers/openlayers.github.io/master/en/v5.3.0/css/ol.css" type="text/css">
+    <style>
+      .map {
+        height: 90%;
+        width: 100%;
+      }
+    </style>
+    
+    <title>OpenLayers example</title>
+	<style>
+      #marker {
+        width: 20px;
+        height: 20px;
+        border: 1px solid #088;
+        border-radius: 10px;
+        background-color: #0FF;
+        opacity: 0.5;
+      }
+	</style>
+	<script src="https://cdn.rawgit.com/openlayers/openlayers.github.io/master/en/v5.3.0/build/ol.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
+	 <script>
+    function get_generators() {
+      $.ajax({
+        url: "https://www.dropbox.com/s/fzqhnr39fq45ijh/gen_info.json?raw=1",
+        contentType:"application/json; charset=utf-8",
+        jsonpCallback: "callback",
+        jsonp: "callback",
+        dataType: "jsonp",
+        // Work with the response
+        success: function (response) {
+          //deleteMarkers();
+          //gen_info=response
+          for (var gen in response) {
+            //console.log(gen + ':' + response[gen])
+
+            val = Math.round(response[gen][6] * 10 / response[gen][7]);
+            if (val > 9) {
+              val = 9;
+            }
+            if (response[gen][3] == 'Wind') {
+              color = greengrad[val]
+            } else if (response[gen][3] == 'Inter') {
+              if (val <= 0) {
+                color = browngrad[-val]
+              } else {
+                color = greengrad[val]
+              }
+            } else {
+              color = redgrad[val]
+            }
+            var info = `<h4>${response[gen][1]}</h4> ${response[gen][0]}<br\>${Math.round(response[gen][6])} MW (${Math.abs(Math.round(response[gen][6] * 100 / response[gen][7]))}% of max capacity)`
+            addMarker(response[gen][4], response[gen][5], color, info)
+          }
+        },
+        error: function (XMLHttpRequest, textStatus, errorThrown) {
+          console.log("Status: " + textStatus);
+          console.log(XMLHttpRequest);
+        }
+      });
+    };
+    function addMarker(lat, lon, color, info) {
+
+      var pos = ol.proj.fromLonLat([lon, lat]);
+      var marker = new ol.Overlay({
+        position: pos,
+        positioning: 'center-center',
+        element: document.getElementById('marker'),
+        stopEvent: false
+      });
+      map.addOverlay(marker);
+      markers.push(marker);
+    }
+	</script>
+  </head>
+  <body>
+    <h2>My Map</h2>
+    <div id="map" class="map"></div>
+	<div id="marker" title="Marker"></div>
+	<a class="overlay" id="vienna" target="_blank" href="http://en.wikipedia.org/wiki/Vienna">Vienna</a>
+    <script type="text/javascript">
+	  var markers = [];
+      var map = new ol.Map({
+        target: 'map',
+        layers: [
+          new ol.layer.Tile({
+            source: new ol.source.OSM()
+          })
+        ],
+        view: new ol.View({
+          center: ol.proj.fromLonLat([135, -33]),
+          zoom: 6
+        })
+      });
+	  var pos=ol.proj.fromLonLat([135.42, -27.54]);
+	  var marker = new ol.Overlay({
+        position: pos,
+        positioning: 'center-center',
+        element: document.getElementById('marker'),
+        stopEvent: false
+      });
+      map.addOverlay(marker);
+	  var vienna = new ol.Overlay({
+        position: pos,
+        element: document.getElementById('vienna')
+      });
+      map.addOverlay(vienna);
+      get_generators()
+	  
+	  
+    </script>
+  </body>
+</html>
