@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mesonet Map</title>
+    <link rel="stylesheet" href="https://openlayers.org/en/v5.3.0/css/ol.css" type="text/css">
+    <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+    <script src="https://cdn.rawgit.com/openlayers/openlayers.github.io/master/en/v5.3.0/build/ol.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
+    <style>
+        html,
+        body {
+            height: 100%;
+            width: 100%;
+            padding: 0px;
+            margin: 0px;
+        }
+
+        .map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .ol-popup {
+            position: absolute;
+            background-color: white;
+            -webkit-filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.2));
+            filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.2));
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #cccccc;
+            bottom: 12px;
+            left: -50px;
+            min-width: 80px;
+        }
+
+        .ol-popup:after,
+        .ol-popup:before {
+            top: 100%;
+            border: solid transparent;
+            content: " ";
+            height: 0;
+            width: 0;
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .ol-popup:after {
+            border-top-color: white;
+            border-width: 10px;
+            left: 48px;
+            margin-left: -10px;
+        }
+
+        .ol-popup:before {
+            border-top-color: #cccccc;
+            border-width: 11px;
+            left: 48px;
+            margin-left: -11px;
+        }
+
+        .ol-popup-closer {
+            text-decoration: none;
+            position: absolute;
+            top: 2px;
+            right: 8px;
+        }
+
+        .ol-popup-closer:after {
+            content: "x";
+        }
+    </style>
+    <script>
+        var redgrad = ["#FFCFCF", "#FFB8B8", "#FFA1A1", "#FF8A8A", "#FF7373", "#FF5C5C", "#FF4545", "#FF2E2E", "#FF1717", "#FF0000"];
+        var greengrad = ["#CFFFCF", "#B8FFB8", "#A1FFA1", "#8AFF8A", "#73FF73", "#5CFF5C", "#45FF45", "#2EFF2E", "#17FF17", "#00FF00"];
+        var browngrad = ["#FEE3C8", "#F2D2B1", "#E6C19B", "#DBB085", "#CF9F6F", "#C48E58", "#B87D42", "#AD6C2C", "#A15B16", "#964A00"];
+        var yellowgrad = ['#FBFD9D', '#FBFD8C', '#FBFD7A', '#FBFD69', '#FBFE57', '#FAFE46', '#FAFE34', '#FAFE23', '#FAFE11', '#FAFF00'];
+        function callback(json) {
+            vectorSource.clear();
+            console.log('in callback');
+            // "HALLWF1": ["21:45 03/02/2019", "Hallett 1 Wind Farm", "SA1", "Wind", "-33.3284341007768", "138.704668661635", 47.93, 95.0]
+            $.each(json, function (key, val) {
+                console.log(key + "=>" + val);
+                //val[6]=current power out, val[7]=max power out
+                percent_out = Math.round(val[6] * 10 / val[7]);
+                if (percent_out > 9) { percent_out = 9; }
+                if (val[3] == 'Wind') {
+                    color = greengrad[percent_out];
+                } else if (val[3] == 'Solar') {
+                    color = yellowgrad[percent_out];
+                    console.log(key, percent_out, color);
+                } else if (val[3] == 'Inter') {
+                    if (percent_out <= 0) {
+                        color = browngrad[-percent_out];
+                    } else {
+                        color = greengrad[percent_out];
+                    }
+                } else {
+                    color = redgrad[percent_out];
+                }
+                var info = `<h4>${val[1]}</h4> ${val[0]}<br\>${Math.round(val[6])} MW (${Math.abs(Math.round(val[6]*100/val[7]))}% of max capacity)`
+                addMarker(val[4], val[5], color, info)
+            });
+            vectorSource.changed(); // needed to redraw after adding markers
+
+        }
+        function try_json() {
+                vectorSource.clear();
+                $.getJSON("/assets/met.json", function (json) {
+                    $.each(json, function (key, val) {
+                        console.log(key + "=>" + val['Location']);
+                        lonLat=[val['Location'][1],val['Location'][0]];
+                        info='<h4>'+key+'</h4><br>';
+                        $.each(val,function(met_parm,met_value) {
+                            info+=met_parm+":"+met_value+"<br>"
+                        });
+                        addMarker(val['Location'][0],val['Location'][1],'green',key,info);
+
+                    });
+                });
+                vectorSource.changed(); // needed to redraw after adding markers
+
+            }
+        function addMarker(lat, lon, color, name, info) {
+            var feature = coloredSvgMarker([lon, lat], name,info, color, 'white');
+            vectorSource.addFeature(feature);
+            
+
+        }
+        function coloredSvgMarker(lonLat, name, info, color, circleFill) {
+            console.log("coloredSvgMarker(" + lonLat + "," + name + "," + color + "," + circleFill + ")");
+            if (!color) color = 'red';
+            if (!circleFill) circleFill = 'white';
+            var feature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat(lonLat)),
+                name: info
+            });
+            var svg = '<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="30px" height="30px" viewBox="0 0 30 30" enable-background="new 0 0 30 30" xml:space="preserve">' +
+                '<path fill="' + color + '" d="M22.906,10.438c0,4.367-6.281,14.312-7.906,17.031c-1.719-2.75-7.906-12.665-7.906-17.031S10.634,2.531,15,2.531S22.906,6.071,22.906,10.438z"/>' +
+                '<circle fill="' + circleFill + '" cx="15" cy="10.677" r="3.291"/></svg>';
+
+            feature.setStyle(
+                new ol.style.Style({
+                    image: new ol.style.Icon({
+                        anchor: [0.5, 1.0],
+                        anchorXUnits: 'fraction',
+                        anchorYUnits: 'fraction',
+                        src: 'data:image/svg+xml,' + escape(svg),
+                        scale: 2,
+                        imgSize: [30, 30],
+                    })
+                    ,text: new ol.style.Text({
+                        font: '12px Calibri,sans-serif',
+                        fill: new ol.style.Fill({ color: '#000' }),
+                        stroke: new ol.style.Stroke({
+                            color: '#fff', width: 2
+                        }),
+                        text: name
+                    })
+                })
+            );
+            return feature;
+        }
+    </script>
+</head>
+  <body>
+    <div id="map" class="map"></div>
+    <div id="popup" class="ol-popup">
+      <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+      <div id="popup-content"></div>
+    </div>
+    <script>
+
+var locations = [
+  ['Bondi Beach', -33.890542, 151.274856, "green"],
+  ['Coogee Beach', -33.923036, 151.259052, "blue"],
+  ['Cronulla Beach', -34.028249, 151.157507, "yellow"],
+  ['Manly Beach', -33.80010128657071, 151.28747820854187, "purple"],
+  ['Maroubra Beach', -33.950198, 151.259302, "red"]
+];
+
+
+      /**
+       * Elements that make up the popup.
+       */
+      var container = document.getElementById('popup');
+      var content = document.getElementById('popup-content');
+      var closer = document.getElementById('popup-closer');
+
+
+      /**
+       * Add a click handler to hide the popup.
+       * @return {boolean} Don't follow the href.
+       */
+      closer.onclick = function() {
+        overlay.setPosition(undefined);
+        closer.blur();
+        return false;
+      };
+
+
+      /**
+       * Create an overlay to anchor the popup to the map.
+       */
+      var overlay = new ol.Overlay({
+        element: container,
+        autoPan: true,
+        autoPanAnimation: {
+          duration: 250
+        }
+      });
+
+      var vectorSource = new ol.source.Vector();
+      var features = [];
+      for (var i=0; i<locations.length;i++) {
+        //features.push(coloredSvgMarker([locations[i][2], locations[i][1]], locations[i][0], locations[i][3]));
+        vectorSource.addFeature(coloredSvgMarker([locations[i][2], locations[i][1]], locations[i][0], locations[i][3]));
+      }
+
+      
+      //var vectorSource = new ol.source.Vector({ // VectorSource({
+      //  features: features
+      //});
+
+      var vectorLayer = new ol.layer.Vector({ // VectorLayer({
+        source: vectorSource
+      });
+
+      var map = new ol.Map({
+        layers: [
+          new ol.layer.Tile({ // TileLayer({
+            source: new ol.source.OSM()
+          }), vectorLayer
+        ],
+        overlays: [overlay],
+        target: 'map',
+        view: new ol.View({
+          center: ol.proj.fromLonLat([135, -33]),
+          zoom: 6
+        })
+      });
+
+      // make the map's view to zoom and pan enough to display all the points
+      //map.getView().fit(vectorSource.getExtent(), map.getSize());
+
+      /**
+       * Add a click handler to the map to render the popup.
+       */
+      map.on('singleclick', function(evt) {
+        var name = map.forEachFeatureAtPixel(evt.pixel, function(feature) {
+          return feature.get('name');
+        })
+        if (name) {
+          container.style.display="block";
+          var coordinate = evt.coordinate;
+          content.innerHTML = name;
+          overlay.setPosition(coordinate);
+        } else {
+          container.style.display="none";
+        }
+      });
+      map.on('pointermove', function(evt) {
+        map.getTargetElement().style.cursor = map.hasFeatureAtPixel(evt.pixel) ? 'pointer' : '';
+      });
+
+
+      
+    try_json();
+    </script> 
+  </body>
+</html>
