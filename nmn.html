@@ -106,7 +106,7 @@
         }
         function try_json() {
                 vectorSource.clear();
-                $.getJSON("/assets/met.json", function (json) {
+                $.getJSON("/met.json", function (json) {
                     $.each(json, function (key, val) {
                         console.log(key + "=>" + val['Location']);
                         lonLat=[val['Location'][1],val['Location'][0]];
